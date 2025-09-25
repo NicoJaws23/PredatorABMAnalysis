@@ -3,34 +3,48 @@ library(tidyverse)
 library(igraph)
 
 f <- "C:\\Users\\Jawor\\Desktop\\ABM_ConferenceCourse\\outputs\\M3_prey_coords_matrix.csv"
-df <- read_csv(f)
+preyPoints <- read_csv(f)
+f1 <- "C:\\Users\\Jawor\\Desktop\\ABM_ConferenceCourse\\outputs\\M3_predator_territories.csv"
+predatorTerritory <-read_csv(f1)
 
-#Determine average distance between individuals
+#How often does a prey agetn fall within a predators territory
+library(dplyr)
+library(tidyr)
+library(sf)
 
-# --- Step 1: Long format ---
-df_long <- df %>%
-  pivot_longer(-id, names_to = "tick", values_to = "coord") %>%
-  mutate(coord = str_remove_all(coord, "[()]")) %>%
-  separate(coord, into = c("x","y"), sep = ",", convert = TRUE)
+# Convert wide → long
+prey_long <- preyPoints %>%
+  pivot_longer(-id, names_to = "tick", values_to = "coords") %>%
+  mutate(coords = gsub("[()]", "", coords)) %>%
+  separate(coords, into = c("x", "y"), sep = ",", convert = TRUE)
 
-# --- Step 2: Self-join by tick to get all pairs ---
-pairs <- df_long %>%
-  rename(x1 = x, y1 = y, id1 = id) %>%
-  inner_join(df_long %>% rename(x2 = x, y2 = y, id2 = id),
-             by = "tick") %>%
-  filter(id1 < id2) %>%   # keep each dyad once
-  mutate(dist = sqrt((x1-x2)^2 + (y1-y2)^2))
+PL_clean <- na.omit(prey_long)
+# Convert to sf points
+prey_sf <- st_as_sf(PL_clean, coords = c("x", "y"), crs = 4326) # arbitrary CRS
 
-# --- Step 3: Average distance across ticks for each dyad ---
-dyad_avg <- pairs %>%
-  group_by(id1, id2) %>%
-  summarise(mean_dist = mean(dist, na.rm = TRUE), .groups = "drop")
 
-dyad_avg
+### --- 2. Predator territories ---
+# Helper to parse corners into polygon
+parse_poly <- function(id, corners) {
+  coords <- gsub("[()]", "", corners) %>%
+    strsplit(",") %>%
+    lapply(as.numeric)
+  mat <- do.call(rbind, coords)
+  st_polygon(list(rbind(mat, mat[1,]))) |> st_sfc(crs = 4326) |> st_sf(id = id, geometry = _)
+}
 
-g <- graph_from_data_frame(dyad_avg, directed = FALSE)
+# Apply to each row
+pred_sf <- do.call(rbind, lapply(1:nrow(predatorTerritory), function(i) {
+  parse_poly(predatorTerritory$id[i], predatorTerritory[i,2:5])
+}))
 
-# Quick plot
-plot(g, edge.width = 1/(E(g)$mean_dist/10), 
-     vertex.size = 20, vertex.label.cex = 0.8,
-     main = "Social network based on average inter-individual distance")
+
+### --- 3. Spatial join (point-in-polygon) ---
+joined <- st_join(prey_sf, pred_sf, join = st_within)
+
+### --- 4. Count how many times each prey was inside each predator territory
+counts <- joined %>%
+  filter(!is.na(id.y)) %>%   # keep only prey inside a territory
+  count(prey_id = id.x, predator_id = id.y)
+
+counts
