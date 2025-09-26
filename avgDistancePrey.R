@@ -1,6 +1,7 @@
 #Analyzing data from territory ABM
 library(tidyverse)
 library(ggplot2)
+library(lme4)
 
 ################################################################################
 ################################################################################
@@ -92,6 +93,61 @@ preyInTerritorySum <- preyInTerritory |>
     last_tick = max(tick),
     .groups = "drop") |>
   arrange(prey_id, predator_id)
+
+
+#Time in pred teritory
+
+preyInTerritoryFull <- preyLongM3 |>
+  filter(!is.na(X), !is.na(Y)) |>
+  crossing(predBounds) |>
+  mutate(in_territory = X >= xmin & X <= xmax & Y >= ymin & Y <= ymax) |>
+  group_by(id, tick) |>
+  summarise(in_territory = any(in_territory), .groups = "drop")
+
+#How often are prey going into predator territories?
+
+preySum <- preyInTerritoryFull |>
+  group_by(id) |>
+  summarise(propInTerritory = mean(in_territory, na.rm = TRUE))
+
+anova_model <- aov(in_territory ~ id, data = preyInTerritoryFull)
+summary(anova_model)
+
+glmm_model <- glmer(in_territory ~ id + (1|tick),
+                    data = preyInTerritoryFull,
+                    family = binomial)
+summary(glmm_model)
+plot(anova_model)
+
+#Are prey closer together than expected by chance
+#function to simulate random points
+simulate_random_avgdist <- function(n, area_size = 100) {
+  randX <- runif(n, min = -area_size/2, max = area_size/2)
+  randY <- runif(n, min = -area_size/2, max = area_size/2)
+  d <- as.matrix(dist(cbind(randX, randY)))
+  m <- mean(d[upper.tri(d)])
+  return(m)
+}
+
+set.seed(123)
+n_sims <- 999
+
+tickResults <- preyDistM3 |>
+  group_by(tick) |>
+  summarise(
+    obs_avg = mean(dist, na.rm = TRUE),
+    n_agents = n_distinct(c(id1, id2)),
+    .groups = "drop"
+  ) |>
+  rowwise() |>
+  mutate(rand_avg = list(replicate(n_sims, simulate_random_avgdist(n_agents))),
+p_value = mean(rand_avg <= obs_avg)) |>
+  ungroup()
+
+tickSummary <- tickResults |>
+  select(tick, obs_avg, p_value)
+
+head(tickSummary)
 
 ################################################################################
 ################################################################################
