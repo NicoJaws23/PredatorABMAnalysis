@@ -336,7 +336,7 @@ ggplot(allCompSum3000S, aes(x = tick, y = mGroupSize, color = factor(num_predato
     color = "Predators",
     x = "Tick",
     y = "Mean Group Size",
-    title = "Effect of predator number on prey density"
+    title = "Effect of predator number on Group Size"
   ) +
   theme_minimal()
 
