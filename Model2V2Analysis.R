@@ -365,3 +365,85 @@ ggplot(allNumComp300m, aes(x = num_predators, y = meanGroups)) +
        y = "Number of Groups",
        title = "Number of Predators and Number of Components") +
   theme_minimal()
+
+##Patch densities for heatmaps
+patch1 <- read.csv(file.choose(), header = TRUE)
+patch2 <- read.csv(file.choose(), header = TRUE)
+patch3 <- read.csv(file.choose(), header = TRUE)
+patch4 <- read.csv(file.choose(), header = TRUE)
+patch5 <- read.csv(file.choose(), header = TRUE)
+patch6 <- read.csv(file.choose(), header = TRUE)
+patch7 <- read.csv(file.choose(), header = TRUE)
+patch8 <- read.csv(file.choose(), header = TRUE)
+
+heatMap <- function(df, numPred) {
+  preds <- numPred
+  pDF <- df
+  pDF <- pDF |>
+    mutate(patch.id = str_remove_all(`patch.id`, "[()]"),
+           x = as.numeric(str_split_fixed(patch.id, ",", 2)[,1]),
+           y = as.numeric(str_split_fixed(patch.id, ",", 2)[,2]))
+  
+  pDFsum <- pDF |>
+    group_by(x, y) |>
+    summarise(total_prey = sum(count), .groups = "drop")
+  
+  plot1 <- ggplot(pDFsum, aes(x = x, y = y, fill = total_prey)) +
+    geom_tile() +
+    scale_fill_viridis_c(option = "plasma") +
+    coord_fixed(ratio = 1, xlim = c(-50, 50), ylim = c(-50, 50)) +
+    labs(
+      title = paste("Prey Density Across Environment:", numPred, "Predators"),
+      x = "X Coordinate",
+      y = "Y Coordinate",
+      fill = "Total Prey"
+    ) +
+    theme_minimal(base_size = 14)
+  
+  plot2 <- ggplot(pDFsum, aes(x = x, y = y, z = total_prey)) +
+    stat_density_2d(aes(fill = after_stat(level)), geom = "polygon") +
+    scale_fill_viridis_c(option = "magma") +
+    coord_fixed(xlim = c(-50, 50), ylim = c(-50, 50)) +
+    labs(
+      title = paste("Prey Density Across Environment:", numPred, "Predators"),
+      x = "X Coordinate",
+      y = "Y Coordinate",
+      fill = "Density"
+    ) +
+    theme_minimal(base_size = 14)
+  
+  return(list(grid = plot1, smooth = plot2))
+  
+}
+patch1Maps <- heatMap(df = patch1, numPred = 1)
+patch1Maps$grid
+patch1Maps$smooth
+
+patch2Maps <- heatMap(df = patch2, numPred = 2)  
+patch2Maps$grid
+patch2Maps$smooth
+
+patch3Maps <- heatMap(df = patch3, numPred = 3)  
+patch3Maps$grid
+patch3Maps$smooth
+
+patch4Maps <- heatMap(df = patch4, numPred = 4)  
+patch4Maps$grid
+patch4Maps$smooth
+
+patch5Maps <- heatMap(df = patch5, numPred = 5)  
+patch5Maps$grid
+patch5Maps$smooth
+
+patch6Maps <- heatMap(df = patch6, numPred = 6)  
+patch6Maps$grid
+patch6Maps$smooth
+
+patch7Maps <- heatMap(df = patch7, numPred = 7)  
+patch7Maps$grid
+patch7Maps$smooth
+
+patch8Maps <- heatMap(df = patch8, numPred = 8)  
+patch8Maps$grid
+patch8Maps$smooth
+
