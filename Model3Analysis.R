@@ -2,6 +2,7 @@
 library(tidyverse)
 library(ggplot2)
 library(lme4)
+library(sf)
 
 ################################################################################
 ################################################################################
@@ -9,140 +10,109 @@ library(lme4)
 #Measure distances between prey when predator have territory and prey move freely
 #across the environment, Model 3
 
-preyPointsM3 <- read.csv(file.choose(), header = TRUE)
+pP1 <- read.csv(file.choose(), header = TRUE)
+pP1 <- pP1 |>
+  rename_with(~ str_remove(.x, "^X"), starts_with("X"))
+pC1 <- read.csv(file.choose(), header = TRUE)
+pT1 <- read.csv(file.choose(), header = TRUE)
 
-predatorPointsM3 <- read.csv(file.choose(), header = TRUE)
+pP2 <- read.csv(file.choose(), header = TRUE)
+pP2 <- pP2 |>
+  rename_with(~ str_remove(.x, "^X"), starts_with("X"))
+pC2 <- read.csv(file.choose(), header = TRUE)
+pT2 <- read.csv(file.choose(), header = TRUE)
 
-predTerritoryM3 <- read.csv(file.choose(), header = TRUE)
+pP3 <- read.csv(file.choose(), header = TRUE)
+pP3 <- pP3 |>
+  rename_with(~ str_remove(.x, "^X"), starts_with("X"))
+pC3 <- read.csv(file.choose(), header = TRUE)
+pT3 <- read.csv(file.choose(), header = TRUE)
 
-#function to go through (x,y) coordinate values
-parse_coords <- function(coord_str) {
-  if (is.na(coord_str)) return(c(NA, NA))
-  as.numeric(str_split(str_remove_all(coord_str, "[()]"), ",")[[1]])
-}
-
-#pivot table
-preyLongM3 <- preyPointsM3 |>
-  pivot_longer(cols = -id, names_to = "tick", values_to = "coords") |>
-  mutate(tick = as.integer(str_remove(tick, "^X")), coords = na_if(coords, ""),
-         X = map_dbl(coords, ~ ifelse(is.na(.x), NA, parse_coords(.x)[1])),
-         Y = map_dbl(coords, ~ ifelse(is.na(.x), NA, parse_coords(.x)[2])))|>
-  select(id, tick, X, Y)
-
-#determine distance between individuals
-preyDistM3 <- preyLongM3 |>
-  filter(!is.na(X), !is.na(Y)) |>
-  group_by(tick) |>
-  do({
-    agents <- .
-    n <- nrow(agents)
-    out <- data.frame()
-    if (n > 1) {
-      for (i in 1:(n-1)) {
-        for (j in (i+1):n) {
-          d <- sqrt((agents$X[i] - agents$X[j])^2 + (agents$Y[i] - agents$Y[j])^2)
-          out <- rbind(out, data.frame(
-            tick = agents$tick[i],
-            id1 = agents$id[i],
-            id2 = agents$id[j],
-            dist = d
-          ))
-        }
-      }
-    }
-    out
-  }) |>
-  ungroup()
-write.csv(predBounds, file = "C:\\Users\\Jawor\\Desktop\\ABM_ConferenceCourse\\outputs\\predBounds.csv")
-#average NN distance
-avgDistM3 <- preyDistM3 |>
-  group_by(tick) |>
-  summarise(avgDistance = mean(dist, na.rm = TRUE), .groups = "drop")
-
-avgDistanceM3 <- ggplot(data = avgDistM3, mapping = aes(x = tick, y = avgDistance)) +
-  geom_line()
-
-#Number of times prey went into predator territory
-predBounds <- predTerritoryM3 |>
-  mutate(across(-id, ~ str_remove_all(., "[()]"))) |>
-  separate(bottom.left, into = c("bl_x", "bl_y"), sep = ",", convert = TRUE) |>
-  separate(bottom.right, into = c("br_x", "br_y"), sep = ",", convert = TRUE) |>
-  separate(top.right, into = c("tr_x", "tr_y"), sep = ",", convert = TRUE) |>
-  separate(top.left, into = c("tl_x", "tl_y"), sep = ",", convert = TRUE) |>
-  transmute(
-    predator_id = id,
-    xmin = pmin(bl_x, tl_x),
-    xmax = pmax(br_x, tr_x),
-    ymin = pmin(bl_y, br_y),
-    ymax = pmax(tl_y, tr_y)
-  )
-
-#seeing if and when prey are in territory
-preyInTerritory <- preyLongM3 |>
-  filter(!is.na(X), !is.na(Y)) |>
-  crossing(predBounds) |>
-  filter(X >= xmin, X <= xmax, Y >= ymin, Y <= ymax) |>
-  select(prey_id = id, predator_id, tick, X, Y)
+pP4 <- read.csv(file.choose(), header = TRUE)
+pP4 <- pP4 |>
+  rename_with(~ str_remove(.x, "^X"), starts_with("X"))
+pC4 <- read.csv(file.choose(), header = TRUE)
+pT4 <- read.csv(file.choose(), header = TRUE)
+#pivot table, use piv(df) function
+pP1Long <- piv(pP1, 1)
+pP2Long <- piv(pP2, 2)
+pP3Long <- piv(pP3, 3)
+pP4Long <- piv(pP4, 4)
 
 
-#summaries when prey were in predator territory 
-preyInTerritorySum <- preyInTerritory |>
-  group_by(prey_id, predator_id) |>
-  summarise(
-    ticks_inside = n(),
-    first_tick = min(tick),
-    last_tick = max(tick),
-    .groups = "drop") |>
-  arrange(prey_id, predator_id)
+#determine distance between individuals, use pairDist() function
+pP1Dist <- pairDist(pP1Long, 1)
+pP2Dist <- pairDist(pP1Long, 2)
+pP3Dist <- pairDist(pP1Long, 3)
+pP4Dist <- pairDist(pP1Long, 4)
 
 
-#Time in pred teritory
-preyInTerritoryFull <- preyLongM3 |>
-  filter(!is.na(X), !is.na(Y)) |>
-  crossing(predBounds) |>
-  mutate(in_territory = X >= xmin & X <= xmax & Y >= ymin & Y <= ymax) |>
-  group_by(id, tick) |>
-  summarise(in_territory = any(in_territory), .groups = "drop")
+#Number of times prey went into predator territory, use terrBounds() to get
+#territory boundary data
+TB1 <- terrBounds(pT1, wWidth = 100, wHeight = 100)
+TB2 <- terrBounds(pT2, wWidth = 100, wHeight = 100)
+TB3 <- terrBounds(pT3, wWidth = 100, wHeight = 100)
+TB4 <- terrBounds(pT4, wWidth = 100, wHeight = 100)
 
-ggplot(data = preyInTerritoryFull, mapping = aes(y = tick, x = in_territory)) +
-  geom_point()
+#seeing if and when prey are in territory, use preyInTerr()
+detach("package:igraph", unload = TRUE)
 
-plot(preyInTerritoryFull$in_territory)
+pP1In <- preyInTerr(pP1Long, TB1$raw, 3000)
+pP2In <- preyInTerr(pP2Long, TB2$raw, 3000)
+pP3In <- preyInTerr(pP3Long, TB3$raw, 3000)
+pP4In <- preyInTerr(pP4Long, TB4$raw, 3000)
 
-a1 <- preyLongM3 |>
-  filter(id == 1:3)
-plot(preyLongM3$X, preyLongM3$Y)
+#summaries when prey were in predator territory, use preyInTerrSum()
+pP1InSum <- preyInTerrSum(pP1In)
+pP2InSum <- preyInTerrSum(pP2In)
+pP3InSum <- preyInTerrSum(pP3In)
+pP4InSum <- preyInTerrSum(pP4In)
 
-ggplot(data = preyLongM3, mapping = aes(X, Y, color = factor(id)))+
-  geom_point()
+#Time in pred teritory, use predInTerrTime()
+pP1T <- predInTerrTime(pP1Long, TB1$raw)
+pP2T <- predInTerrTime(pP2Long, TB2$raw)
+pP3T <- predInTerrTime(pP3Long, TB3$raw)
+pP4T <- predInTerrTime(pP4Long, TB4$raw)
 
-predTerritoriesv2 <- predBounds %>%
-  rowwise() %>%
-  mutate(corners = list(data.frame(
-    x = c(xmin, xmax, xmax, xmin, xmin),  # loop back to first point
-    y = c(ymin, ymin, ymax, ymax, ymin)
-  ))) %>%
-  unnest(corners)
+#plotting heat maps with predator territory
+NoMem_hm1 <- heatMapPredTerr(pC1, numPred = 1, terrBoundsObj = TB1)
+NoMem_hm1$raw
+NoMem_hm1$smooth
+NoMem_hm1$relative
 
-ggplot() +
-  geom_point(data = preyLongM3,
-             aes(x = X, y = Y, color = factor(id)), alpha = 0.6, size = 1) +
-  geom_path(data = predTerritoriesv2,
-            aes(x = x, y = y, group = predator_id),
-            color = "red", linewidth = 1) +
-  theme_minimal()
+NoMem_hm2 <- heatMapPredTerr(pC2, numPred = 2, terrBoundsObj = TB2)
+NoMem_hm2$raw
+NoMem_hm2$smooth
+NoMem_hm2$relative
 
-#Calculating predator area
-predBounds <- predBounds |>
-  mutate(area = abs(xmax - xmin) * abs(ymax - ymin))
+NoMem_hm3 <- heatMapPredTerr(pC3, numPred = 3, terrBoundsObj = TB3)
+NoMem_hm3$raw
+NoMem_hm3$smooth
+NoMem_hm3$relative
 
-total_pred_area <- sum(predBounds$area)
+NoMem_hm4 <- heatMapPredTerr(pC4, numPred = 4, terrBoundsObj = TB4)
+NoMem_hm4$raw
+NoMem_hm4$smooth
+NoMem_hm4$relative
 
-env_xmin <- min(preyLongM3$X, na.rm = TRUE)
-env_xmax <- max(preyLongM3$X, na.rm = TRUE)
-env_ymin <- min(preyLongM3$Y, na.rm = TRUE)
-env_ymax <- max(preyLongM3$Y, na.rm = TRUE)
-env_area <- (env_xmax - env_xmin) * (env_ymax - env_ymin)
-percent_cover <- (total_pred_area / env_area) * 100
+#with mem 
+Mem_hm1 <- heatMapPredTerr(pC1, numPred = 1, terrBoundsObj = TB1)
+Mem_hm1$raw
+Mem_hm1$smooth
+Mem_hm1$relative
 
-percent_cover
+Mem_hm2 <- heatMapPredTerr(pC2, numPred = 2, terrBoundsObj = TB2)
+Mem_hm2$raw
+Mem_hm2$smooth
+Mem_hm2$relative
+
+Mem_hm3 <- heatMapPredTerr(pC3, numPred = 3, terrBoundsObj = TB3)
+Mem_hm3$raw
+Mem_hm3$smooth
+Mem_hm3$relative
+
+Mem_hm4 <- heatMapPredTerr(pC4, numPred = 4, terrBoundsObj = TB4)
+Mem_hm4$raw
+Mem_hm4$smooth
+Mem_hm4$relative
+

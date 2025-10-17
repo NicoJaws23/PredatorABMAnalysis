@@ -21,22 +21,6 @@ p4 <- p4 |>
   rename_with(~ str_remove(.x, "^X"), starts_with("X"))
 
 
-
-piv <- function(df, predNum){
-  df |>
-    pivot_longer(
-      cols = -id,
-      names_to = "tick",
-      values_to = "coord") |>
-    mutate(
-      tick = as.numeric(tick),
-      coord = str_remove_all(coord, "[()]"),
-      x = as.numeric(str_split_fixed(coord, ",", 2)[,1]),
-      y = as.numeric(str_split_fixed(coord, ",", 2)[,2]),
-      num_predators = predNum
-    )
-}
-
 p1Long <- piv(p1, 1)
 p2Long <- piv(p2, 2)
 p3Long <- piv(p3, 3)
@@ -103,34 +87,6 @@ ggplot(dist_summary3000, aes(x = num_predators, y = avg_distance)) +
 
 
 #Calculating networks and components analysis
-
-pairDist <- function(df, predNum) {
-  df |>
-    filter(!is.na(x), !is.na(y)) |>
-    group_by(tick) |>
-    do({
-      agents <- .
-      n <- nrow(agents)
-      out <- data.frame()
-      if (n > 1) {
-        for (i in 1:(n-1)) {
-          for (j in (i+1):n) {
-            d <- sqrt((agents$x[i] - agents$x[j])^2 + (agents$y[i] - agents$y[j])^2)
-            out <- rbind(out, data.frame(
-              tick = agents$tick[i],
-              id1 = agents$id[i],
-              id2 = agents$id[j],
-              dist = d,
-              num_predators = predNum
-            ))
-          }
-        }
-      }
-      out
-    }) |>
-    ungroup()
-}
-
 d1 <- pairDist(p1Long, 1)
 d2 <- pairDist(p2Long, 2)
 d3 <- pairDist(p3Long, 3)
@@ -140,45 +96,6 @@ allDist <- bind_rows(d1, d2, d3, d4)
 
 ticks_all <- sort(unique(allDist$tick))
 pred_levels <- sort(unique(allDist$num_predators))
-
-buildNetwork <- function(Distdf, Coorddf, t, threshold) {
-  edges_t <- Distdf |>
-    filter(tick == t, dist < threshold)
-  verts_t <- Coorddf |>
-    filter(tick == t) |>
-    distinct(id, x, y)
-  
-  g <- graph_from_data_frame(
-    d <- edges_t |> select(id1, id2),
-    vertices = verts_t |> rename(name = id),
-    directed = FALSE
-  )
-  
-  comps <- components(g)
-  
-  verts_t <- verts_t |>
-    mutate(comp = comps$membership[as.character(id)],
-           tick = t)
-  
-  list(graph = g, verts = verts_t)
-} 
-
-compSum <- function(networks) {
-  comp_summary <- lapply(networks, function(net) {
-    verts <- net$verts
-    verts |>
-      group_by(tick, comp) |>
-      summarise(n_individuals = n(), .groups = "drop")
-  }) |> bind_rows()
-  
-  return(comp_summary)
-}
-
-numComp <- function(compSummary) {
-  compSummary |>
-    group_by(tick) |>
-    summarise(n_components = n(), .groups = "drop")
-}
 
 all_networks <- list()
 
@@ -266,39 +183,6 @@ ggplot(allNumComp300m, aes(x = num_predators, y = meanGroups)) +
 network_to_plot <- all_networks[[as.character(pred_to_plot)]][[which(
   sort(unique(allDist$tick)) == tick_to_plot
 )]]
-
-plot_spatial_network <- function(all_networks, pred_to_plot, tick_to_plot, limits = c(-50, 50)) {
-  # Extract target network
-  network_to_plot <- all_networks[[as.character(pred_to_plot)]][[which(
-    sort(unique(allDist$tick)) == tick_to_plot
-  )]]
-  
-  verts <- network_to_plot$verts %>%
-    mutate(id = as.character(id))  # ensure character IDs
-  
-  edges <- igraph::as_data_frame(network_to_plot$graph, what = "edges")
-  
-  # Join coordinates for each edge endpoint
-  edges_xy <- edges %>%
-    left_join(verts, by = c("from" = "id")) %>%
-    left_join(verts, by = c("to" = "id"), suffix = c(".from", ".to"))
-  
-  # Plot
-  ggplot() +
-    geom_segment(data = edges_xy,
-                 aes(x = x.from, y = y.from, xend = x.to, yend = y.to),
-                 color = "gray70", alpha = 0.4) +
-    geom_point(data = verts, aes(x = x, y = y, color = as.factor(comp)), size = 3) +
-    scale_color_brewer(palette = "Set2") +
-    coord_equal(xlim = limits, ylim = limits) +
-    theme_minimal(base_size = 14) +
-    labs(
-      title = paste("Spatial Prey Network —", pred_to_plot, "Predator(s) at Tick", tick_to_plot),
-      x = "X coordinate",
-      y = "Y coordinate",
-      color = "Group"
-    )
-}
 
 
 plot_spatial_network(all_networks, pred_to_plot = 1, tick_to_plot = 5900)

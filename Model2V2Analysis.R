@@ -31,20 +31,6 @@ p8 <- read.csv(file.choose(), header = TRUE)
 p8 <- p8 |>
   rename_with(~ str_remove(.x, "^X"), starts_with("X"))
 
-piv <- function(df, predNum){
-  df |>
-    pivot_longer(
-    cols = -id,
-    names_to = "tick",
-    values_to = "coord") |>
-    mutate(
-      tick = as.numeric(tick),
-      coord = str_remove_all(coord, "[()]"),
-      x = as.numeric(str_split_fixed(coord, ",", 2)[,1]),
-      y = as.numeric(str_split_fixed(coord, ",", 2)[,2]),
-      num_predators = predNum
-    )
-}
 
 p1Long <- piv(p1, 1)
 p2Long <- piv(p2, 2)
@@ -74,6 +60,7 @@ mean_dists <- allData |>
 
 ggplot(mean_dists, aes(x = tick, y = mean_distance, color = factor(num_predators))) +
   geom_line(size = 1) +
+  ylim(0, NA) +
   labs(
     color = "Predators",
     x = "Tick",
@@ -84,12 +71,28 @@ ggplot(mean_dists, aes(x = tick, y = mean_distance, color = factor(num_predators
 
 
 dist_summary <- mean_dists |>
+  group_by(tick, num_predators) |>
+  summarize(avg_distance = mean(mean_distance, na.rm = TRUE))
+
+dist_summaryG <- mean_dists |>
   group_by(num_predators) |>
   summarize(avg_distance = mean(mean_distance, na.rm = TRUE))
 
-ggplot(dist_summary, aes(x = num_predators, y = avg_distance)) +
-  geom_point(size = 3) +
+ggplot(dist_summaryG, aes(x = as.factor(num_predators), y = avg_distance)) +
+  geom_point() +
   geom_line() +
+  ylim(0, NA) +
+  labs(
+    x = "Numb of Predators",
+    y = "Average inter-prey distance",
+    title = "Average prey spacing vs predator number"
+  ) +
+  theme_classic()
+
+ggplot(dist_summary, aes(x = as.factor(num_predators), y = avg_distance)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
   labs(
     x = "Numb of Predators",
     y = "Average inter-prey distance",
@@ -104,9 +107,14 @@ dist_summary3000 <- mDist3000 |>
   group_by(num_predators) |>
   summarize(avg_distance = mean(mean_distance, na.rm = TRUE))
 
+dist_summary3000G <- mDist3000 |>
+  group_by(tick, num_predators) |>
+  summarize(avg_distance = mean(mean_distance, na.rm = TRUE))
+
 ggplot(dist_summary3000, aes(x = num_predators, y = avg_distance)) +
   geom_point(size = 3) +
   geom_line() +
+  ylim(0, NA) +
   labs(
     x = "Numb of Predators",
     y = "Average inter-prey distance",
@@ -114,6 +122,16 @@ ggplot(dist_summary3000, aes(x = num_predators, y = avg_distance)) +
   ) +
   theme_classic()
 
+ggplot(dist_summary3000G, aes(x = as.factor(num_predators), y = avg_distance)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Numb of Predators",
+    y = "Average inter-prey distance",
+    title = "Average prey spacing vs predator number"
+  ) +
+  theme_classic()
 
 #Number of neighbors analysis
 n1 <- read.csv(file.choose(), header = TRUE)
@@ -141,16 +159,6 @@ n8 <- read.csv(file.choose(), header = TRUE)
 n8 <- n8 |>
   rename_with(~ str_remove(.x, "^X"), starts_with("X"))
 
-pivNeighbor<- function(df, predNum) {
-  df |>
-    pivot_longer(
-      cols = -id,
-      names_to = "tick",
-      values_to = "neighbors",
-      names_transform = list(tick = as.numeric)) |>
-    mutate(num_predators = predNum)
-  
-}
 n1Long <- pivNeighbor(n1, 1)
 n2Long <- pivNeighbor(n2, 2)
 n3Long <- pivNeighbor(n3, 3)
@@ -204,33 +212,6 @@ ggplot(nOverall3000, aes(x = num_predators, y = avg_Neighbors)) +
 
 #Calculating networks and components analysis
 
-pairDist <- function(df, predNum) {
-  df |>
-    filter(!is.na(x), !is.na(y)) |>
-    group_by(tick) |>
-    do({
-      agents <- .
-      n <- nrow(agents)
-      out <- data.frame()
-      if (n > 1) {
-        for (i in 1:(n-1)) {
-          for (j in (i+1):n) {
-            d <- sqrt((agents$x[i] - agents$x[j])^2 + (agents$y[i] - agents$y[j])^2)
-            out <- rbind(out, data.frame(
-              tick = agents$tick[i],
-              id1 = agents$id[i],
-              id2 = agents$id[j],
-              dist = d,
-              num_predators = predNum
-            ))
-          }
-        }
-      }
-      out
-    }) |>
-    ungroup()
-}
-
 d1 <- pairDist(p1Long, 1)
 d2 <- pairDist(p2Long, 2)
 d3 <- pairDist(p3Long, 3)
@@ -244,45 +225,6 @@ allDist <- bind_rows(d1, d2, d3, d4, d5, d6, d7, d8)
 
 ticks_all <- sort(unique(allDist$tick))
 pred_levels <- sort(unique(allDist$num_predators))
-
-buildNetwork <- function(Distdf, Coorddf, t, threshold) {
-  edges_t <- Distdf |>
-    filter(tick == t, dist < threshold)
-  verts_t <- Coorddf |>
-    filter(tick == t) |>
-    distinct(id, x, y)
-  
-  g <- graph_from_data_frame(
-    d <- edges_t |> select(id1, id2),
-    vertices = verts_t |> rename(name = id),
-    directed = FALSE
-  )
-  
-  comps <- components(g)
-  
-  verts_t <- verts_t |>
-    mutate(comp = comps$membership[as.character(id)],
-           tick = t)
-  
-  list(graph = g, verts = verts_t)
-} 
-
-compSum <- function(networks) {
-  comp_summary <- lapply(networks, function(net) {
-    verts <- net$verts
-    verts |>
-      group_by(tick, comp) |>
-      summarise(n_individuals = n(), .groups = "drop")
-  }) |> bind_rows()
-  
-  return(comp_summary)
-}
-
-numComp <- function(compSummary) {
-  compSummary |>
-    group_by(tick) |>
-    summarise(n_components = n(), .groups = "drop")
-}
 
 all_networks <- list()
 
@@ -340,6 +282,17 @@ ggplot(allCompSum3000S, aes(x = tick, y = mGroupSize, color = factor(num_predato
   ) +
   theme_minimal()
 
+ggplot(allCompSum3000S, aes(x = as.factor(num_predators), y = mGroupSize)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Predators",
+    y = "Mean Group Size",
+    title = "Effect of predator number on Group Size"
+  ) +
+  theme_minimal()
+
 #Changes in average group size by predators after 3000 ticks
 ggplot(meanCompSumPred, aes(x = num_predators, y = mGroupSize)) +
   geom_line(size = 1) +
@@ -354,6 +307,16 @@ ggplot(allNumComp3000, aes(x = tick, y = n_components, color = factor(num_predat
   labs(
     color = "Predators",
     x = "Tick",
+    y = "Components",
+    title = "Effect of predator number on Number of Groups") +
+  theme_minimal()
+
+ggplot(allNumComp3000, aes(x = as.factor(num_predators), y = n_components)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Predators",
     y = "Components",
     title = "Effect of predator number on Number of Groups") +
   theme_minimal()
@@ -376,74 +339,43 @@ patch6 <- read.csv(file.choose(), header = TRUE)
 patch7 <- read.csv(file.choose(), header = TRUE)
 patch8 <- read.csv(file.choose(), header = TRUE)
 
-heatMap <- function(df, numPred) {
-  preds <- numPred
-  pDF <- df
-  pDF <- pDF |>
-    mutate(patch.id = str_remove_all(`patch.id`, "[()]"),
-           x = as.numeric(str_split_fixed(patch.id, ",", 2)[,1]),
-           y = as.numeric(str_split_fixed(patch.id, ",", 2)[,2]))
-  
-  pDFsum <- pDF |>
-    group_by(x, y) |>
-    summarise(total_prey = sum(count), .groups = "drop")
-  
-  plot1 <- ggplot(pDFsum, aes(x = x, y = y, fill = total_prey)) +
-    geom_tile() +
-    scale_fill_viridis_c(option = "plasma") +
-    coord_fixed(ratio = 1, xlim = c(-50, 50), ylim = c(-50, 50)) +
-    labs(
-      title = paste("Prey Density Across Environment:", numPred, "Predators"),
-      x = "X Coordinate",
-      y = "Y Coordinate",
-      fill = "Total Prey"
-    ) +
-    theme_minimal(base_size = 14)
-  
-  plot2 <- ggplot(pDFsum, aes(x = x, y = y, z = total_prey)) +
-    stat_density_2d(aes(fill = after_stat(level)), geom = "polygon") +
-    scale_fill_viridis_c(option = "magma") +
-    coord_fixed(xlim = c(-50, 50), ylim = c(-50, 50)) +
-    labs(
-      title = paste("Prey Density Across Environment:", numPred, "Predators"),
-      x = "X Coordinate",
-      y = "Y Coordinate",
-      fill = "Density"
-    ) +
-    theme_minimal(base_size = 14)
-  
-  return(list(grid = plot1, smooth = plot2))
-  
-}
 patch1Maps <- heatMap(df = patch1, numPred = 1)
 patch1Maps$grid
 patch1Maps$smooth
+patch1Maps$preyDes
 
 patch2Maps <- heatMap(df = patch2, numPred = 2)  
 patch2Maps$grid
 patch2Maps$smooth
+patch2Maps$preyDes
 
 patch3Maps <- heatMap(df = patch3, numPred = 3)  
 patch3Maps$grid
 patch3Maps$smooth
+patch3Maps$preyDes
 
 patch4Maps <- heatMap(df = patch4, numPred = 4)  
 patch4Maps$grid
 patch4Maps$smooth
+patch4Maps$preyDes
 
 patch5Maps <- heatMap(df = patch5, numPred = 5)  
 patch5Maps$grid
 patch5Maps$smooth
+patch5Maps$preyDes
 
 patch6Maps <- heatMap(df = patch6, numPred = 6)  
 patch6Maps$grid
 patch6Maps$smooth
+patch6Maps$preyDes
 
 patch7Maps <- heatMap(df = patch7, numPred = 7)  
 patch7Maps$grid
 patch7Maps$smooth
+patch7Maps$preyDes
 
 patch8Maps <- heatMap(df = patch8, numPred = 8)  
 patch8Maps$grid
 patch8Maps$smooth
+patch8Maps$preyDes
 
