@@ -339,42 +339,42 @@ patch6 <- read.csv(file.choose(), header = TRUE)
 patch7 <- read.csv(file.choose(), header = TRUE)
 patch8 <- read.csv(file.choose(), header = TRUE)
 
-patch1Maps <- heatMap(df = patch1, numPred = 1)
+patch1Maps <- heatMap(df = patch1, numPred = 1, titleText = "Prey Density, 1 Predator")
 patch1Maps$grid
 patch1Maps$smooth
 patch1Maps$preyDes
 
-patch2Maps <- heatMap(df = patch2, numPred = 2)  
+patch2Maps <- heatMap(df = patch2, numPred = 2, titleText = "Prey Density, 2 Predators")  
 patch2Maps$grid
 patch2Maps$smooth
 patch2Maps$preyDes
 
-patch3Maps <- heatMap(df = patch3, numPred = 3)  
+patch3Maps <- heatMap(df = patch3, numPred = 3, titleText = "Prey Density, 3 Predators")  
 patch3Maps$grid
 patch3Maps$smooth
 patch3Maps$preyDes
 
-patch4Maps <- heatMap(df = patch4, numPred = 4)  
+patch4Maps <- heatMap(df = patch4, numPred = 4, titleText = "Prey Density, 4 Predators")  
 patch4Maps$grid
 patch4Maps$smooth
 patch4Maps$preyDes
 
-patch5Maps <- heatMap(df = patch5, numPred = 5)  
+patch5Maps <- heatMap(df = patch5, numPred = 5, titleText = "Prey Density, 5 Predators")  
 patch5Maps$grid
 patch5Maps$smooth
 patch5Maps$preyDes
 
-patch6Maps <- heatMap(df = patch6, numPred = 6)  
+patch6Maps <- heatMap(df = patch6, numPred = 6, titleText = "Prey Density, 6 Predators")  
 patch6Maps$grid
 patch6Maps$smooth
 patch6Maps$preyDes
 
-patch7Maps <- heatMap(df = patch7, numPred = 7)  
+patch7Maps <- heatMap(df = patch7, numPred = 7, titleText = "Prey Density, 7 Predators")  
 patch7Maps$grid
 patch7Maps$smooth
 patch7Maps$preyDes
 
-patch8Maps <- heatMap(df = patch8, numPred = 8)  
+patch8Maps <- heatMap(df = patch8, numPred = 8, titleText = "Prey Density, 8 Predators")  
 patch8Maps$grid
 patch8Maps$smooth
 patch8Maps$preyDes

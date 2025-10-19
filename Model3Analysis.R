@@ -75,43 +75,43 @@ pP3T <- predInTerrTime(pP3Long, TB3$raw)
 pP4T <- predInTerrTime(pP4Long, TB4$raw)
 
 #plotting heat maps with predator territory
-NoMem_hm1 <- heatMapPredTerr(pC1, numPred = 1, terrBoundsObj = TB1)
+NoMem_hm1 <- heatMapPredTerr(pC1, numPred = 1, terrBoundsObj = TB1, titleText = "Prey Density, 1 Predator, No Memory")
 NoMem_hm1$raw
 NoMem_hm1$smooth
 NoMem_hm1$relative
 
-NoMem_hm2 <- heatMapPredTerr(pC2, numPred = 2, terrBoundsObj = TB2)
+NoMem_hm2 <- heatMapPredTerr(pC2, numPred = 2, terrBoundsObj = TB2, titleText = "Prey Density, 2 Predators, No Memory")
 NoMem_hm2$raw
 NoMem_hm2$smooth
 NoMem_hm2$relative
 
-NoMem_hm3 <- heatMapPredTerr(pC3, numPred = 3, terrBoundsObj = TB3)
+NoMem_hm3 <- heatMapPredTerr(pC3, numPred = 3, terrBoundsObj = TB3, titleText = "Prey Density, 3 Predators, No Memory")
 NoMem_hm3$raw
 NoMem_hm3$smooth
 NoMem_hm3$relative
 
-NoMem_hm4 <- heatMapPredTerr(pC4, numPred = 4, terrBoundsObj = TB4)
+NoMem_hm4 <- heatMapPredTerr(pC4, numPred = 4, terrBoundsObj = TB4, titleText = "Prey Density, 4 Predators, No Memory")
 NoMem_hm4$raw
 NoMem_hm4$smooth
 NoMem_hm4$relative
 
 #with mem 
-Mem_hm1 <- heatMapPredTerr(pC1, numPred = 1, terrBoundsObj = TB1)
+Mem_hm1 <- heatMapPredTerr(pC1, numPred = 1, terrBoundsObj = TB1, titleText = "Prey Density, 1 Predator, Memory")
 Mem_hm1$raw
 Mem_hm1$smooth
 Mem_hm1$relative
 
-Mem_hm2 <- heatMapPredTerr(pC2, numPred = 2, terrBoundsObj = TB2)
+Mem_hm2 <- heatMapPredTerr(pC2, numPred = 2, terrBoundsObj = TB2, titleText = "Prey Density, 2 Predators, Memory")
 Mem_hm2$raw
 Mem_hm2$smooth
 Mem_hm2$relative
 
-Mem_hm3 <- heatMapPredTerr(pC3, numPred = 3, terrBoundsObj = TB3)
+Mem_hm3 <- heatMapPredTerr(pC3, numPred = 3, terrBoundsObj = TB3, titleText = "Prey Density, 3 Predators, Memory")
 Mem_hm3$raw
 Mem_hm3$smooth
 Mem_hm3$relative
 
-Mem_hm4 <- heatMapPredTerr(pC4, numPred = 4, terrBoundsObj = TB4)
+Mem_hm4 <- heatMapPredTerr(pC4, numPred = 4, terrBoundsObj = TB4, titleText = "Prey Density, 4 Predators, Memory")
 Mem_hm4$raw
 Mem_hm4$smooth
 Mem_hm4$relative

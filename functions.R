@@ -113,7 +113,7 @@ numComp <- function(compSummary) {
 }
 
 #Generates heatmaps of prey locations
-heatMap <- function(df, numPred) {
+heatMap <- function(df, numPred, titleText) {
   preds <- numPred
   pDF <- df
   pDF <- pDF |>
@@ -133,7 +133,7 @@ heatMap <- function(df, numPred) {
     scale_x_continuous(breaks = seq(-50, 50, by = 10)) +
     scale_y_continuous(breaks = seq(-50, 50, by = 10)) +
     labs(
-      title = paste("Prey Density Across Environment:", numPred, "Predators"),
+      title = titleText,
       x = "X Coordinate",
       y = "Y Coordinate",
       fill = "Total Prey"
@@ -149,7 +149,7 @@ heatMap <- function(df, numPred) {
     scale_x_continuous(breaks = seq(-50, 50, by = 10)) +
     scale_y_continuous(breaks = seq(-50, 50, by = 10)) +
     labs(
-      title = paste("Prey Density Across Environment:", numPred, "Predators"),
+      title = titleText,
       x = "X Coordinate",
       y = "Y Coordinate",
       fill = "Density"
@@ -171,7 +171,7 @@ heatMap <- function(df, numPred) {
     scale_x_continuous(breaks = seq(-50, 50, by = 10)) +
     scale_y_continuous(breaks = seq(-50, 50, by = 10)) +
     labs(
-      title = paste("Prey Density Across Environment:", numPred, "Predators"),
+      title = titleText,
       x = "X Coordinate",
       y = "Y Coordinate",
       fill = "Relative Density"
@@ -311,7 +311,7 @@ predInTerrTime <- function(df, predBounds) {
 }
 
 #mapping prey locations with territory
-heatMapPredTerr <- function(df, numPred, terrBoundsObj) {
+heatMapPredTerr <- function(df, numPred, terrBoundsObj, titleText) {
   # df = prey patch data
   # numPred = number of predators (for labeling)
   # terrBoundsObj = the output from terrBounds(), e.g., TB1 or TB4
@@ -339,7 +339,7 @@ heatMapPredTerr <- function(df, numPred, terrBoundsObj) {
     scale_x_continuous(breaks = seq(-50, 50, by = 10)) +
     scale_y_continuous(breaks = seq(-50, 50, by = 10)) +
     labs(
-      title = paste("Prey Density & Predator Territories —", numPred, "Predators"),
+      title = titleText,
       x = "X Coordinate",
       y = "Y Coordinate",
       fill = "Total Prey"
@@ -360,7 +360,7 @@ heatMapPredTerr <- function(df, numPred, terrBoundsObj) {
     scale_x_continuous(breaks = seq(-50, 50, by = 10)) +
     scale_y_continuous(breaks = seq(-50, 50, by = 10)) +
     labs(
-      title = paste("Smoothed Prey Density —", numPred, "Predators"),
+      title = titleText,
       x = "X Coordinate",
       y = "Y Coordinate",
       fill = "Density"
@@ -384,7 +384,7 @@ heatMapPredTerr <- function(df, numPred, terrBoundsObj) {
     scale_x_continuous(breaks = seq(-50, 50, by = 10)) +
     scale_y_continuous(breaks = seq(-50, 50, by = 10)) +
     labs(
-      title = paste("Relative Prey Density —", numPred, "Predators"),
+      title = titleText,
       x = "X Coordinate",
       y = "Y Coordinate",
       fill = "Relative Density"
