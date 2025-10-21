@@ -394,3 +394,21 @@ heatMapPredTerr <- function(df, numPred, terrBoundsObj, titleText) {
   
   return(list(raw = plot1, smooth = plot2, relative = plot3))
 }
+
+
+meanDist <- function(df) {
+  data <- df
+  data <- data |>
+    group_by(num_predators, tick) |>
+    group_modify(~ {
+      df <- .x
+      if (nrow(df) > 1) {
+        dist_mat <- as.matrix(dist(df[, c("x", "y")]))
+        mean_dist <- mean(dist_mat[upper.tri(dist_mat)], na.rm = TRUE)
+        tibble(mean_distance = mean_dist)
+      } else {
+        tivvle(mean_distance = NA_real_)
+      }
+    }) |>
+    ungroup()
+}
