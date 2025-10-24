@@ -299,6 +299,153 @@ NTNM_patch4Maps$grid
 NTNM_patch4Maps$smooth
 NTNM_patch4Maps$preyDes
 
+################################
+###No Territory Shared Memory###
+################################
+
+##Basic Stats for Prey Distances Due to Predators##
+ntsm1 <- read.csv(file.choose(), header = TRUE)
+ntsm1 <- ntsm1 |>
+  rename_with(~ str_remove(.x, "^X"), starts_with("X"))
+
+ntsm2 <- read.csv(file.choose(), header = TRUE)
+ntsm2 <- ntsm2 |>
+  rename_with(~ str_remove(.x, "^X"), starts_with("X"))
+
+ntsm3 <- read.csv(file.choose(), header = TRUE)
+ntsm3 <- ntsm3 |>
+  rename_with(~ str_remove(.x, "^X"), starts_with("X"))
+
+ntsm4 <- read.csv(file.choose(), header = TRUE)
+ntsm4 <- ntsm4 |>
+  rename_with(~ str_remove(.x, "^X"), starts_with("X"))
+
+ntsm1Long <- piv(ntsm1, 1)
+ntsm2Long <- piv(ntsm2, 2)
+ntsm3Long <- piv(ntsm3, 3)
+ntsm4Long <- piv(ntsm4, 4)
+
+NTSM_all <- bind_rows(ntsm1Long, ntsm2Long, ntsm3Long, ntsm4Long)
+
+NTSM_meanDist <- meanDist(NTSM_all)
+
+ggplot(NTSM_meanDist, aes(x = tick, y = mean_distance, color = factor(num_predators))) +
+  geom_line(size = 1) +
+  ylim(0, NA) +
+  labs(
+    color = "Predators",
+    x = "Tick",
+    y = "Mean inter-prey distance",
+    title = "No Territory With Shared Memory, Effect of predator number on prey density"
+  ) +
+  theme_minimal()
+
+NTSM_distsummary <- NTSM_meanDist |>
+  filter(tick >= 3000) |>
+  group_by(tick, num_predators) |>
+  summarize(avg_distance = mean(mean_distance, na.rm = TRUE))
+
+ggplot(NTSM_distsummary, aes(x = as.factor(num_predators), y = avg_distance)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Numb of Predators",
+    y = "Average inter-prey distance",
+    title = "No Territory With Shared Memory, Average prey spacing vs predator number, post 3000 ticks"
+  ) +
+  theme_classic()
+
+##Calc Networks and Components##
+
+NTSMd1 <- pairDist(ntsm1Long, 1)
+NTSMd2 <- pairDist(ntsm2Long, 2)
+NTSMd3 <- pairDist(ntsm3Long, 3)
+NTSMd4 <- pairDist(ntsm4Long, 4)
+
+NTSM_allDist <- bind_rows(NTSMd1, NTSMd2, NTSMd3, NTSMd4)
+
+NTSM_ticks_all <- sort(unique(NTSM_allDist$tick))
+NTSM_pred_levels <- sort(unique(NTSM_allDist$num_predators))
+
+NTSM_all_networks <- list()
+
+for(pred in NTSM_pred_levels) {
+  Distdf_pred <- NTSM_allDist |> filter(num_predators == pred)
+  Coorddf_pred <- NTSM_all |> filter(num_predators == pred)
+  
+  ticks_all <- sort(unique(Distdf_pred$tick))
+  
+  networks_pred <- lapply(ticks_all, function(t) buildNetwork(Distdf_pred, Coorddf_pred, t, threshold = 5))
+  
+  NTSM_all_networks[[as.character(pred)]] <- networks_pred
+}
+
+NTSM_allCompSum <- lapply(names(NTSM_all_networks), function(pred) {
+  comp_summary <- compSum(NTSM_all_networks[[pred]]) |>
+    mutate(num_predators = as.numeric(pred))
+  return(comp_summary)
+}) |> bind_rows()
+
+#Group sizes changing with number of predators
+
+NTSM_groupSize3000 <- NTSM_allCompSum|>
+  filter(tick >= 3000) |>
+  group_by(tick, num_predators) |>
+  summarise(mGroupSize = mean(n_individuals), .groups = "drop")
+
+ggplot(NTSM_groupSize3000, aes(x = as.factor(num_predators), y = mGroupSize)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Predators",
+    y = "Mean Group Size",
+    title = "No Territory With Shared Memory, Effect of predator number on Group Size, post 3000 ticks"
+  ) +
+  theme_minimal()
+#Number of groups as changing with number of predators
+NTSM_allNumComp <- NTSM_allCompSum |>
+  filter(tick >= 3000) |>
+  group_by(num_predators, tick) |>
+  summarise(n_components = n(), .groups = "drop")
+
+ggplot(NTSM_allNumComp, aes(x = as.factor(num_predators), y = n_components)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Predators",
+    y = "Components",
+    title = "No Territory With Shared Memory, Effect of predator number on Number of Groups, post 3000 ticks") +
+  theme_minimal()
+
+##Heatmaps Based on Number of Prey on a Patch##
+NTSM_patch1 <- read.csv(file.choose(), header = TRUE)
+NTSM_patch2 <- read.csv(file.choose(), header = TRUE)
+NTSM_patch3 <- read.csv(file.choose(), header = TRUE)
+NTSM_patch4 <- read.csv(file.choose(), header = TRUE)
+
+NTSM_patch1Maps <- heatMap(df = NTSM_patch1, numPred = 1, titleText = "No Territory with Shared Memory Prey Density, 1 Predator")
+NTSM_patch1Maps$grid
+NTSM_patch1Maps$smooth
+NTM_patch1Maps$preyDes
+
+NTSM_patch2Maps <- heatMap(df = NTSM_patch2, numPred = 2, titleText = "No Territory with Shared Memory Prey Density, 2 Predators")
+NTSM_patch2Maps$grid
+NTSM_patch2Maps$smooth
+NTSM_patch2Maps$preyDes
+
+NTSM_patch3Maps <- heatMap(df = NTSM_patch3, numPred = 3, titleText = "No Territory with Shared Memory Prey Density, 3 Predators")
+NTSM_patch3Maps$grid
+NTSM_patch3Maps$smooth
+NTSM_patch3Maps$preyDes
+
+NTSM_patch4Maps <- heatMap(df = NTSM_patch4, numPred = 4, titleText = "No Territory with Shared Memory Prey Density, 4 Predators")
+NTSM_patch4Maps$grid
+NTSM_patch4Maps$smooth
+NTSM_patch4Maps$preyDes
+
 
 ###############################
 ###Predator Territory Memory###
@@ -670,6 +817,193 @@ PDTNM_hm4$smooth
 PDTNM_hm4$relative
 
 library(igraph)
+
+######################################
+###Predator Territory Shared Memory###
+######################################
+
+##Basic Stats for Prey Distances Due to Predators##
+pdtsm1 <- read.csv(file.choose(), header = TRUE)
+pdtsm1 <- pdtsm1 |>
+  rename_with(~ str_remove(.x, "^X"), starts_with("X"))
+
+pdtsm2 <- read.csv(file.choose(), header = TRUE)
+pdtsm2 <- pdtsm2 |>
+  rename_with(~ str_remove(.x, "^X"), starts_with("X"))
+
+pdtsm3 <- read.csv(file.choose(), header = TRUE)
+pdtsm3 <- pdtsm3 |>
+  rename_with(~ str_remove(.x, "^X"), starts_with("X"))
+
+pdtsm4 <- read.csv(file.choose(), header = TRUE)
+pdtsm4 <- pdtsm4 |>
+  rename_with(~ str_remove(.x, "^X"), starts_with("X"))
+
+pdtsm1Long <- piv(pdtsm1, 1)
+pdtsm2Long <- piv(pdtsm2, 2)
+pdtsm3Long <- piv(pdtsm3, 3)
+pdtsm4Long <- piv(pdtsm4, 4)
+
+PDTSM_all <- bind_rows(pdtsm1Long, pdtsm2Long, pdtsm3Long, pdtsm4Long)
+
+PDTSM_meanDist <- meanDist(PDTSM_all)
+
+ggplot(PDTSM_meanDist, aes(x = tick, y = mean_distance, color = factor(num_predators))) +
+  geom_line(size = 1) +
+  ylim(0, NA) +
+  labs(
+    color = "Predators",
+    x = "Tick",
+    y = "Mean inter-prey distance",
+    title = "Predator Territory With Shared Memory, Effect of predator number on prey density"
+  ) +
+  theme_minimal()
+
+PDTSM_distsummary <- PDTSM_meanDist |>
+  filter(tick >= 3000) |>
+  group_by(tick, num_predators) |>
+  summarize(avg_distance = mean(mean_distance, na.rm = TRUE))
+
+ggplot(PDTSM_distsummary, aes(x = as.factor(num_predators), y = avg_distance)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Numb of Predators",
+    y = "Average inter-prey distance",
+    title = "Predator Territory With Shared Memory, Average prey spacing vs predator number, post 3000 ticks"
+  ) +
+  theme_classic()
+
+##Calc Networks and Components##
+
+PDTSMd1 <- pairDist(pdtsm1Long, 1)
+PDTSMd2 <- pairDist(pdtsm2Long, 2)
+PDTSMd3 <- pairDist(pdtsm3Long, 3)
+PDTSMd4 <- pairDist(pdtsm4Long, 4)
+
+PDTSM_allDist <- bind_rows(PDTSMd1, PDTSMd2, PDTSMd3, PDTSMd4)
+
+PDTSM_ticks_all <- sort(unique(PDTSM_allDist$tick))
+PDTSM_pred_levels <- sort(unique(PDTSM_allDist$num_predators))
+
+PDTSM_all_networks <- list()
+
+for(pred in PDTSM_pred_levels) {
+  Distdf_pred <- PDTSM_allDist |> filter(num_predators == pred)
+  Coorddf_pred <- PDTSM_all |> filter(num_predators == pred)
+  
+  ticks_all <- sort(unique(Distdf_pred$tick))
+  
+  networks_pred <- lapply(ticks_all, function(t) buildNetwork(Distdf_pred, Coorddf_pred, t, threshold = 5))
+  
+  PDTSM_all_networks[[as.character(pred)]] <- networks_pred
+}
+
+PDTSM_allCompSum <- lapply(names(PDTSM_all_networks), function(pred) {
+  comp_summary <- compSum(PDTSM_all_networks[[pred]]) |>
+    mutate(num_predators = as.numeric(pred))
+  return(comp_summary)
+}) |> bind_rows()
+
+#Group sizes changing with number of predators
+
+PDTSM_groupSize3000 <- PDTSM_allCompSum|>
+  filter(tick >= 3000) |>
+  group_by(tick, num_predators) |>
+  summarise(mGroupSize = mean(n_individuals), .groups = "drop")
+
+ggplot(PDTSM_groupSize3000, aes(x = as.factor(num_predators), y = mGroupSize)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Predators",
+    y = "Mean Group Size",
+    title = "Predator Territory With Shared Memory, Effect of predator number on Group Size, post 3000 ticks"
+  ) +
+  theme_minimal()
+
+#Number of groups as changing with number of predators
+
+PDTSM_allNumComp <- PDTSM_allCompSum |>
+  filter(tick >= 3000) |>
+  group_by(num_predators, tick) |>
+  summarise(n_components = n(), .groups = "drop")
+
+ggplot(PDTSM_allNumComp, aes(x = as.factor(num_predators), y = n_components)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Predators",
+    y = "Components",
+    title = "Predator Territory With Shared Memory, Effect of predator number on Number of Groups, post 3000 ticks") +
+  theme_minimal()
+
+##Heatmaps Based on Number of Prey on a Patch##
+
+#Get predator territories measured
+#territory boundary data
+PDTSM_pT1 <- read.csv(file.choose(), header = TRUE)
+PDTSM_pT2 <- read.csv(file.choose(), header = TRUE)
+PDTSM_pT3 <- read.csv(file.choose(), header = TRUE)
+PDTSM_pT4 <- read.csv(file.choose(), header = TRUE)
+
+#patch count data
+PDTSM_pC1 <- read.csv(file.choose(), header = TRUE)
+PDTSM_pC2 <- read.csv(file.choose(), header = TRUE)
+PDTSM_pC3 <- read.csv(file.choose(), header = TRUE)
+PDTSM_pC4 <- read.csv(file.choose(), header = TRUE)
+
+PDTSM_TB1 <- terrBounds(PDTSM_pT1, wWidth = 100, wHeight = 100)
+PDTSM_TB2 <- terrBounds(PDTSM_pT2, wWidth = 100, wHeight = 100)
+PDTSM_TB3 <- terrBounds(PDTSM_pT3, wWidth = 100, wHeight = 100)
+PDTSM_TB4 <- terrBounds(PDTSM_pT4, wWidth = 100, wHeight = 100)
+
+#seeing if and when prey are in territory, use preyInTerr()
+detach("package:igraph", unload = TRUE)
+
+PDTSM_pP1In <- preyInTerr(pdtsm1Long, PDTSM_TB1$raw, 3000)
+PDTSM_pP2In <- preyInTerr(pdtsm2Long, PDTSM_TB2$raw, 3000)
+PDTSM_pP3In <- preyInTerr(pdtsm3Long, PDTSM_TB3$raw, 3000)
+PDTSM_pP4In <- preyInTerr(pdtsm4Long, PDTSM_TB4$raw, 3000)
+
+#summaries when prey were in predator territory, use preyInTerrSum()
+PDTSM_pP1InSum <- preyInTerrSum(PDTSM_pP1In)
+PDTSM_pP2InSum <- preyInTerrSum(PDTSM_pP2In)
+PDTSM_pP3InSum <- preyInTerrSum(PDTSM_pP3In)
+PDTSM_pP4InSum <- preyInTerrSum(PDTSM_pP4In)
+
+#Time in pred teritory, use predInTerrTime()
+PDTSM_pP1T <- predInTerrTime(pdtsm1Long, PDTSM_TB1$raw)
+PDTSM_pP2T <- predInTerrTime(pdtsm2Long, PDTSM_TB2$raw)
+PDTSM_pP3T <- predInTerrTime(pdtsm3Long, PDTSM_TB3$raw)
+PDTSM_pP4T <- predInTerrTime(pdtsm4Long, PDTSM_TB4$raw)
+
+#plotting heat maps with predator territory
+PDTSM_hm1 <- heatMapPredTerr(PDTSM_pC1, numPred = 1, terrBoundsObj = PDTSM_TB1, titleText = "Predator Territory With Shared Memory, Prey Density, 1 Predator")
+PDTSM_hm1$raw
+PDTSM_hm1$smooth
+PDTSM_hm1$relative
+
+PDTSM_hm2 <- heatMapPredTerr(PDTSM_pC2, numPred = 2, terrBoundsObj = PDTSM_TB2, titleText = "Predator Territory With Shared Memory, Prey Density, 2 Predators")
+PDTSM_hm2$raw
+PDTSM_hm2$smooth
+PDTSM_hm2$relative
+
+PDTSM_hm3 <- heatMapPredTerr(PDTSM_pC3, numPred = 3, terrBoundsObj = PDTSM_TB3, titleText = "Predator Territory With Shared Memory, Prey Density, 3 Predators")
+PDTSM_hm3$raw
+PDTSM_hm3$smooth
+PDTSM_hm3$relative
+
+PDTSM_hm4 <- heatMapPredTerr(PDTSM_pC4, numPred = 4, terrBoundsObj = PDTSM_TB4, titleText = "Predator Territory With Shared Memory, Prey Density, 4 Predators")
+PDTSM_hm4$raw
+PDTSM_hm4$smooth
+PDTSM_hm4$relative
+
+library(igraph)
+
 ###########################
 ###Prey Territory Memory###
 ###########################
@@ -964,3 +1298,152 @@ PYTNM_patch4Maps <- heatMap(df = PYTNM_patch4, numPred = 4, titleText = "Prey Te
 PYTNM_patch4Maps$grid
 PYTNM_patch4Maps$smooth
 PYTNM_patch4Maps$preyDes
+
+library(igraph)
+##################################
+###Prey Territory Shared Memory###
+##################################
+
+##Basic Stats for Prey Distances Due to Predators##
+pytsm1 <- read.csv(file.choose(), header = TRUE)
+pytsm1 <- pytsm1 |>
+  rename_with(~ str_remove(.x, "^X"), starts_with("X"))
+
+pytsm2 <- read.csv(file.choose(), header = TRUE)
+pytsm2 <- pytsm2 |>
+  rename_with(~ str_remove(.x, "^X"), starts_with("X"))
+
+pytsm3 <- read.csv(file.choose(), header = TRUE)
+pytsm3 <- pytsm3 |>
+  rename_with(~ str_remove(.x, "^X"), starts_with("X"))
+
+pytsm4 <- read.csv(file.choose(), header = TRUE)
+pytsm4 <- pytsm4 |>
+  rename_with(~ str_remove(.x, "^X"), starts_with("X"))
+
+pytsm1Long <- piv(pytsm1, 1)
+pytsm2Long <- piv(pytsm2, 2)
+pytsm3Long <- piv(pytsm3, 3)
+pytsm4Long <- piv(pytsm4, 4)
+
+PYTSM_all <- bind_rows(pytsm1Long, pytsm2Long, pytsm3Long, pytsm4Long)
+
+PYTSM_meanDist <- meanDist(PYTSM_all)
+
+ggplot(PYTSM_meanDist, aes(x = tick, y = mean_distance, color = factor(num_predators))) +
+  geom_line(size = 1) +
+  ylim(0, NA) +
+  labs(
+    color = "Predators",
+    x = "Tick",
+    y = "Mean inter-prey distance",
+    title = "Prey Territory With Shared Memory, Effect of predator number on prey density"
+  ) +
+  theme_minimal()
+
+PYTSM_distsummary <- PYTSM_meanDist |>
+  filter(tick >= 3000) |>
+  group_by(tick, num_predators) |>
+  summarize(avg_distance = mean(mean_distance, na.rm = TRUE))
+
+ggplot(PYTSM_distsummary, aes(x = as.factor(num_predators), y = avg_distance)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Numb of Predators",
+    y = "Average inter-prey distance",
+    title = "Prey Territory With Shared Memory, Average prey spacing vs predator number, post 3000 ticks"
+  ) +
+  theme_classic()
+
+##Calc Networks and Components##
+
+PYTSMd1 <- pairDist(pytsm1Long, 1)
+PYTSMd2 <- pairDist(pytsm2Long, 2)
+PYTSMd3 <- pairDist(pytsm3Long, 3)
+PYTSMd4 <- pairDist(pytsm4Long, 4)
+
+PYTSM_allDist <- bind_rows(PYTSMd1, PYTSMd2, PYTSMd3, PYTSMd4)
+
+PYTSM_ticks_all <- sort(unique(PYTSM_allDist$tick))
+PYTSM_pred_levels <- sort(unique(PYTSM_allDist$num_predators))
+
+PYTSM_all_networks <- list()
+
+for(pred in PYTSM_pred_levels) {
+  Distdf_pred <- PYTSM_allDist |> filter(num_predators == pred)
+  Coorddf_pred <- PYTSM_all |> filter(num_predators == pred)
+  
+  ticks_all <- sort(unique(Distdf_pred$tick))
+  
+  networks_pred <- lapply(ticks_all, function(t) buildNetwork(Distdf_pred, Coorddf_pred, t, threshold = 5))
+  
+  PYTSM_all_networks[[as.character(pred)]] <- networks_pred
+}
+
+PYTSM_allCompSum <- lapply(names(PYTSM_all_networks), function(pred) {
+  comp_summary <- compSum(PYTM_all_networks[[pred]]) |>
+    mutate(num_predators = as.numeric(pred))
+  return(comp_summary)
+}) |> bind_rows()
+
+#Group sizes changing with number of predators
+
+PYTSM_groupSize3000 <- PYTSM_allCompSum|>
+  filter(tick >= 3000) |>
+  group_by(tick, num_predators) |>
+  summarise(mGroupSize = mean(n_individuals), .groups = "drop")
+
+ggplot(PYTSM_groupSize3000, aes(x = as.factor(num_predators), y = mGroupSize)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Predators",
+    y = "Mean Group Size",
+    title = "Prey Territory With Shared Memory, Effect of predator number on Group Size, post 3000 ticks"
+  ) +
+  theme_minimal()
+#Number of groups as changing with number of predators
+PYTSM_allNumComp <- PYTSM_allCompSum |>
+  filter(tick >= 3000) |>
+  group_by(num_predators, tick) |>
+  summarise(n_components = n(), .groups = "drop")
+
+ggplot(PYTSM_allNumComp, aes(x = as.factor(num_predators), y = n_components)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Predators",
+    y = "Components",
+    title = "Prey Territory With Shared Memory, Effect of predator number on Number of Groups, post 3000 ticks") +
+  theme_minimal()
+
+##Heatmaps Based on Number of Prey on a Patch##
+PYTSM_patch1 <- read.csv(file.choose(), header = TRUE)
+PYTSM_patch2 <- read.csv(file.choose(), header = TRUE)
+PYTSM_patch3 <- read.csv(file.choose(), header = TRUE)
+PYTSM_patch4 <- read.csv(file.choose(), header = TRUE)
+
+PYTSM_patch1Maps <- heatMap(df = PYTSM_patch1, numPred = 1, titleText = "Prey Territory with Shared Memory Prey Density, 1 Predator")
+PYTSM_patch1Maps$grid
+PYTSM_patch1Maps$smooth
+PYTSM_patch1Maps$preyDes
+
+PYTSM_patch2Maps <- heatMap(df = PYTSM_patch2, numPred = 2, titleText = "Prey Territory with Shared Memory Prey Density, 2 Predators")
+PYTSM_patch2Maps$grid
+PYTSM_patch2Maps$smooth
+PYTSM_patch2Maps$preyDes
+
+PYTSM_patch3Maps <- heatMap(df = PYTSM_patch3, numPred = 3, titleText = "Prey Territory with Shared Memory Prey Density, 3 Predators")
+PYTSM_patch3Maps$grid
+PYTSM_patch3Maps$smooth
+PYTSM_patch3Maps$preyDes
+
+PYTSM_patch4Maps <- heatMap(df = PYTSM_patch4, numPred = 4, titleText = "Prey Territory with Shared Memory Prey Density, 4 Predators")
+PYTSM_patch4Maps$grid
+PYTSM_patch4Maps$smooth
+PYTSM_patch4Maps$preyDes
+
