@@ -4,7 +4,7 @@
 piv <- function(df, predNum){
   df |>
     pivot_longer(
-      cols = -id,
+      cols = -c(behaviorspaceRun, id),
       names_to = "tick",
       values_to = "coord") |>
     mutate(
@@ -43,7 +43,7 @@ pivM3 <- function(df){
 pairDist <- function(df, predNum) {
   df |>
     filter(!is.na(x), !is.na(y)) |>
-    group_by(tick) |>
+    group_by(behaviorspaceRun, tick) |>
     do({
       agents <- .
       n <- nrow(agents)
@@ -412,3 +412,37 @@ meanDist <- function(df) {
     }) |>
     ungroup()
 }
+
+#Split behavior space exports
+#If prey/pred coordinates: header_pattern = "^id\t0"
+#If patch count: header_pattern = "^tick\tpatch-id"
+#If territory bounds: header_pattern = "^id\tbottom-left"
+split_behaviorspace_runs <- function(df, header_pattern) {
+  # Convert the data frame back into text lines
+  tmpfile <- tempfile(fileext = ".csv")
+  write.table(df, tmpfile, sep = "\t", row.names = FALSE, quote = FALSE)
+  raw_lines <- readLines(tmpfile)
+  unlink(tmpfile)
+  
+  # Find where each new BehaviorSpace run starts
+  header_lines <- grep(header_pattern, raw_lines)
+  
+  # Split by run and read each section
+  chunks <- lapply(seq_along(header_lines), function(i) {
+    start <- header_lines[i]
+    end <- ifelse(i < length(header_lines), header_lines[i + 1] - 1, length(raw_lines))
+    read.table(text = raw_lines[start:end], header = TRUE, sep = "\t")
+  })
+  
+  # Add run number column and combine
+  chunks <- lapply(seq_along(chunks), function(i) {
+    df <- chunks[[i]]
+    df$behaviorspaceRun <- i
+    df <- df[, c("behaviorspaceRun", setdiff(names(df), "behaviorspaceRun"))] # make first column
+    df
+  })
+  
+  # Return one cleaned data frame
+  do.call(rbind, chunks)
+}
+
