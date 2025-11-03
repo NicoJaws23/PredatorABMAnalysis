@@ -126,6 +126,29 @@ ggplot(NTM_allNumComp, aes(x = as.factor(num_predators), y = n_components)) +
     title = "No Territory With Memory, Effect of predator number on Number of Groups, post 3000 ticks") +
   theme_minimal()
 
+##Distance Between Individuals In The Same Group
+NTM_Comp_all <- lapply(names(NTM_all_networks), function(pred) {
+  withinCompDist(NTM_all_networks[[pred]], predNum = as.numeric(pred))
+}) |> bind_rows()
+
+# Summary: average distance per component per tick per predator
+NTM_CompDist_summary <- NTM_Comp_all |>
+  group_by(num_predators, tick, compID) |>
+  summarise(
+    n_individuals = first(n_individuals),  # same for all pairs in the comp
+    mean_dist = mean(dist, na.rm = TRUE),
+    .groups = "drop"
+  )
+ggplot(NTM_CompDist_summary, aes(x = as.factor(num_predators), y = mean_dist)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Predators",
+    y = "Mean Dist",
+    title = "No Territory With Memory, Effect of predator number on IntraGroup Dist") +
+  theme_minimal()
+
 ##Heatmaps Based on Number of Prey on a Patch##
 NTM_patch1 <- read.csv(file.choose(), header = TRUE)
 NTM_patch2 <- read.csv(file.choose(), header = TRUE)
@@ -273,6 +296,29 @@ ggplot(NTNM_allNumComp, aes(x = as.factor(num_predators), y = n_components)) +
     title = "No Territory No Memory, Effect of predator number on Number of Groups, post 3000 ticks") +
   theme_minimal()
 
+##Distance Between Individuals In The Same Group
+NTNM_Comp_all <- lapply(names(NTNM_all_networks), function(pred) {
+  withinCompDist(NTNM_all_networks[[pred]], predNum = as.numeric(pred))
+}) |> bind_rows()
+
+# Summary: average distance per component per tick per predator
+NTNM_CompDist_summary <- NTNM_Comp_all |>
+  group_by(num_predators, tick, compID) |>
+  summarise(
+    n_individuals = first(n_individuals),  # same for all pairs in the comp
+    mean_dist = mean(dist, na.rm = TRUE),
+    .groups = "drop"
+  )
+ggplot(NTNM_CompDist_summary, aes(x = as.factor(num_predators), y = mean_dist)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Predators",
+    y = "Mean Dist",
+    title = "No Territory With Memory, Effect of predator number on IntraGroup Dist") +
+  theme_minimal()
+
 ##Heatmaps Based on Number of Prey on a Patch##
 NTNM_patch1 <- read.csv(file.choose(), header = TRUE)
 NTNM_patch2 <- read.csv(file.choose(), header = TRUE)
@@ -418,6 +464,29 @@ ggplot(NTSM_allNumComp, aes(x = as.factor(num_predators), y = n_components)) +
     x = "Predators",
     y = "Components",
     title = "No Territory With Shared Memory, Effect of predator number on Number of Groups, post 3000 ticks") +
+  theme_minimal()
+
+##Distance Between Individuals In The Same Group
+NTSM_Comp_all <- lapply(names(NTSM_all_networks), function(pred) {
+  withinCompDist(NTSM_all_networks[[pred]], predNum = as.numeric(pred))
+}) |> bind_rows()
+
+# Summary: average distance per component per tick per predator
+NTSM_CompDist_summary <- NTSM_Comp_all |>
+  group_by(num_predators, tick, compID) |>
+  summarise(
+    n_individuals = first(n_individuals),  # same for all pairs in the comp
+    mean_dist = mean(dist, na.rm = TRUE),
+    .groups = "drop"
+  )
+ggplot(NTSM_CompDist_summary, aes(x = as.factor(num_predators), y = mean_dist)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Predators",
+    y = "Mean Dist",
+    title = "No Territory With Memory, Effect of predator number on IntraGroup Dist") +
   theme_minimal()
 
 ##Heatmaps Based on Number of Prey on a Patch##
@@ -568,6 +637,29 @@ ggplot(PDTM_allNumComp, aes(x = as.factor(num_predators), y = n_components)) +
     x = "Predators",
     y = "Components",
     title = "Predator Territory With Memory, Effect of predator number on Number of Groups, post 3000 ticks") +
+  theme_minimal()
+
+##Distance Between Individuals In The Same Group
+PDTM_Comp_all <- lapply(names(PDTM_all_networks), function(pred) {
+  withinCompDist(PDTM_all_networks[[pred]], predNum = as.numeric(pred))
+}) |> bind_rows()
+
+# Summary: average distance per component per tick per predator
+PDTM_CompDist_summary <- PDTM_Comp_all |>
+  group_by(num_predators, tick, compID) |>
+  summarise(
+    n_individuals = first(n_individuals),  # same for all pairs in the comp
+    mean_dist = mean(dist, na.rm = TRUE),
+    .groups = "drop"
+  )
+ggplot(PDTM_CompDist_summary, aes(x = as.factor(num_predators), y = mean_dist)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Predators",
+    y = "Mean Dist",
+    title = "No Territory With Memory, Effect of predator number on IntraGroup Dist") +
   theme_minimal()
 
 ##Heatmaps Based on Number of Prey on a Patch##
@@ -755,6 +847,28 @@ ggplot(PDTNM_allNumComp, aes(x = as.factor(num_predators), y = n_components)) +
     title = "Predator Territory No Memory, Effect of predator number on Number of Groups, post 3000 ticks") +
   theme_minimal()
 
+##Distance Between Individuals In The Same Group
+PDTNM_Comp_all <- lapply(names(PDTNM_all_networks), function(pred) {
+  withinCompDist(PDTNM_all_networks[[pred]], predNum = as.numeric(pred))
+}) |> bind_rows()
+
+# Summary: average distance per component per tick per predator
+PDTNM_CompDist_summary <- PDTNM_Comp_all |>
+  group_by(num_predators, tick, compID) |>
+  summarise(
+    n_individuals = first(n_individuals),  # same for all pairs in the comp
+    mean_dist = mean(dist, na.rm = TRUE),
+    .groups = "drop"
+  )
+ggplot(PDTNM_CompDist_summary, aes(x = as.factor(num_predators), y = mean_dist)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Predators",
+    y = "Mean Dist",
+    title = "No Territory With Memory, Effect of predator number on IntraGroup Dist") +
+  theme_minimal()
 ##Heatmaps Based on Number of Prey on a Patch##
 
 #Get predator territories measured
@@ -941,6 +1055,29 @@ ggplot(PDTSM_allNumComp, aes(x = as.factor(num_predators), y = n_components)) +
     title = "Predator Territory With Shared Memory, Effect of predator number on Number of Groups, post 3000 ticks") +
   theme_minimal()
 
+##Distance Between Individuals In The Same Group
+PDTSM_Comp_all <- lapply(names(PDTSM_all_networks), function(pred) {
+  withinCompDist(PDTSM_all_networks[[pred]], predNum = as.numeric(pred))
+}) |> bind_rows()
+
+# Summary: average distance per component per tick per predator
+PDTSM_CompDist_summary <- PDTSM_Comp_all |>
+  group_by(num_predators, tick, compID) |>
+  summarise(
+    n_individuals = first(n_individuals),  # same for all pairs in the comp
+    mean_dist = mean(dist, na.rm = TRUE),
+    .groups = "drop"
+  )
+ggplot(PDTSM_CompDist_summary, aes(x = as.factor(num_predators), y = mean_dist)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Predators",
+    y = "Mean Dist",
+    title = "No Territory With Memory, Effect of predator number on IntraGroup Dist") +
+  theme_minimal()
+
 ##Heatmaps Based on Number of Prey on a Patch##
 
 #Get predator territories measured
@@ -1125,6 +1262,28 @@ ggplot(PYTM_allNumComp, aes(x = as.factor(num_predators), y = n_components)) +
     title = "Prey Territory With Memory, Effect of predator number on Number of Groups, post 3000 ticks") +
   theme_minimal()
 
+##Distance Between Individuals In The Same Group
+PYTM_Comp_all <- lapply(names(PYTM_all_networks), function(pred) {
+  withinCompDist(PYTM_all_networks[[pred]], predNum = as.numeric(pred))
+}) |> bind_rows()
+
+# Summary: average distance per component per tick per predator
+PYTM_CompDist_summary <- PYTM_Comp_all |>
+  group_by(num_predators, tick, compID) |>
+  summarise(
+    n_individuals = first(n_individuals),  # same for all pairs in the comp
+    mean_dist = mean(dist, na.rm = TRUE),
+    .groups = "drop"
+  )
+ggplot(PYTM_CompDist_summary, aes(x = as.factor(num_predators), y = mean_dist)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Predators",
+    y = "Mean Dist",
+    title = "No Territory With Memory, Effect of predator number on IntraGroup Dist") +
+  theme_minimal()
 ##Heatmaps Based on Number of Prey on a Patch##
 PYTM_patch1 <- read.csv(file.choose(), header = TRUE)
 PYTM_patch2 <- read.csv(file.choose(), header = TRUE)
@@ -1271,6 +1430,28 @@ ggplot(PYTNM_allNumComp, aes(x = as.factor(num_predators), y = n_components)) +
     x = "Predators",
     y = "Components",
     title = "Prey Territory No Memory, Effect of predator number on Number of Groups, post 3000 ticks") +
+  theme_minimal()
+##Distance Between Individuals In The Same Group
+PYTNM_Comp_all <- lapply(names(PYTNM_all_networks), function(pred) {
+  withinCompDist(PYTNM_all_networks[[pred]], predNum = as.numeric(pred))
+}) |> bind_rows()
+
+# Summary: average distance per component per tick per predator
+PYTNM_CompDist_summary <- PYTNM_Comp_all |>
+  group_by(num_predators, tick, compID) |>
+  summarise(
+    n_individuals = first(n_individuals),  # same for all pairs in the comp
+    mean_dist = mean(dist, na.rm = TRUE),
+    .groups = "drop"
+  )
+ggplot(PYTNM_CompDist_summary, aes(x = as.factor(num_predators), y = mean_dist)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Predators",
+    y = "Mean Dist",
+    title = "No Territory With Memory, Effect of predator number on IntraGroup Dist") +
   theme_minimal()
 
 ##Heatmaps Based on Number of Prey on a Patch##
@@ -1419,6 +1600,29 @@ ggplot(PYTSM_allNumComp, aes(x = as.factor(num_predators), y = n_components)) +
     x = "Predators",
     y = "Components",
     title = "Prey Territory With Shared Memory, Effect of predator number on Number of Groups, post 3000 ticks") +
+  theme_minimal()
+
+##Distance Between Individuals In The Same Group
+PYTSM_Comp_all <- lapply(names(PYTSM_all_networks), function(pred) {
+  withinCompDist(PYTSM_all_networks[[pred]], predNum = as.numeric(pred))
+}) |> bind_rows()
+
+# Summary: average distance per component per tick per predator
+PYTSM_CompDist_summary <- PYTSM_Comp_all |>
+  group_by(num_predators, tick, compID) |>
+  summarise(
+    n_individuals = first(n_individuals),  # same for all pairs in the comp
+    mean_dist = mean(dist, na.rm = TRUE),
+    .groups = "drop"
+  )
+ggplot(PYTSM_CompDist_summary, aes(x = as.factor(num_predators), y = mean_dist)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  ylim(0, NA) +
+  labs(
+    x = "Predators",
+    y = "Mean Dist",
+    title = "No Territory With Memory, Effect of predator number on IntraGroup Dist") +
   theme_minimal()
 
 ##Heatmaps Based on Number of Prey on a Patch##

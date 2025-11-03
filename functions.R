@@ -4,7 +4,7 @@
 piv <- function(df, predNum){
   df |>
     pivot_longer(
-      cols = -c(behaviorspaceRun, id),
+      cols = -id,
       names_to = "tick",
       values_to = "coord") |>
     mutate(
@@ -43,7 +43,7 @@ pivM3 <- function(df){
 pairDist <- function(df, predNum) {
   df |>
     filter(!is.na(x), !is.na(y)) |>
-    group_by(behaviorspaceRun, tick) |>
+    group_by(tick) |>
     do({
       agents <- .
       n <- nrow(agents)
@@ -444,5 +444,40 @@ split_behaviorspace_runs <- function(df, header_pattern) {
   
   # Return one cleaned data frame
   do.call(rbind, chunks)
+}
+
+#Distance between agents within the same component or group
+withinCompDist <- function(networks, predNum) {
+  all_dists <- lapply(networks, function(net) {
+    verts <- net$verts
+    out <- data.frame()
+    
+    for(c in unique(verts$comp)) {
+      comp_verts <- verts |> filter(comp == c)
+      n <- nrow(comp_verts)
+      
+      if(n > 1) {
+        # pairwise distances
+        for(i in 1:(n-1)) {
+          for(j in (i+1):n) {
+            d <- sqrt((comp_verts$x[i] - comp_verts$x[j])^2 + 
+                        (comp_verts$y[i] - comp_verts$y[j])^2)
+            out <- rbind(out, data.frame(
+              tick = comp_verts$tick[i],
+              compID = c,
+              id1 = comp_verts$id[i],
+              id2 = comp_verts$id[j],
+              dist = d,
+              n_individuals = n,
+              num_predators = predNum
+            ))
+          }
+        }
+      }
+    }
+    return(out)
+  })
+  
+  bind_rows(all_dists)
 }
 
