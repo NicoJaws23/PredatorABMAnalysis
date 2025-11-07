@@ -281,7 +281,7 @@ NTMd4 <- pairDist(ntm4, 4)
 #No Terr No Mem
 NTNMd1 <- pairDist(ntnm1, 1)
 NTNMd2 <- pairDist(ntnm2, 2)
-#NTNMd3 <- pairDist(ntnm3, 3)
+NTNMd3 <- pairDist(ntnm3, 3)
 NTNMd4 <- pairDist(ntnm4, 4)
 
 #No Terr Shared Mem
@@ -315,10 +315,10 @@ PYTMd3 <- pairDist(pytm3, 3)
 PYTMd4 <- pairDist(pytm4, 4)
 
 #Prey Terr No Mem
-#PYTNMd1 <- pairDist(pytnm1, 1)
+PYTNMd1 <- pairDist(pytnm1, 1)
 PYTNMd2 <- pairDist(pytnm2, 2)
-#PYTNMd3 <- pairDist(pytnm3, 3)
-#PYTNMd4 <- pairDist(pytnm4, 4)
+PYTNMd3 <- pairDist(pytnm3, 3)
+PYTNMd4 <- pairDist(pytnm4, 4)
 
 #Prey Terr Shared Mem
 PYTSMd1 <- pairDist(pytsm1, 1)
@@ -548,11 +548,45 @@ ggplot(NTNM_allNumComp, aes(x = as.factor(num_predators), y = n_components)) +
   theme_minimal()
 
 ##Heatmaps Based on Number of Prey on a Patch##
-NTNM_patch1 <- read.csv(file.choose(), header = TRUE)
-NTNM_patch1 <- split_behaviorspace_runs(NTNM_patch1, "^tick\tpatch-id")
-
-NTNM_patch2 <- read.csv(file.choose(), header = TRUE)
-NTNM_patch2 <- split_behaviorspace_runs(NTNM_patch2, "^tick\tpatch-id")
+path <- "C:\\Users\\Jawor\\Desktop\\ABM_ConferenceCourse\\ExperimentOutputs\\NoTerritoryNoMemory\\PatchCounts\\p1"
+NTNM_patch1f <- list.files(path, pattern = "\\.csv$", full.names = TRUE)
+NTNM_patch1 <- NTNM_patch1f %>%
+  imap_dfr(~ {
+    # read all as character to avoid type conflicts
+    df <- read_csv(.x, col_types = cols(.default = "c"))
+    
+    # extract the number that comes after "run"
+    run_id <- str_extract(basename(.x), "(?<=run)\\d+")
+    run_id <- as.numeric(run_id)
+    
+    df %>%
+      mutate(
+        tick = as.numeric(tick),
+        count = as.numeric(count),
+        behaviorSpaceRun = run_id,
+        predNum = 1
+      )
+  })
+testFunc <- fileRead(path, numPred = 1, type = "patchCount")
+path <- "C:\\Users\\Jawor\\Desktop\\ABM_ConferenceCourse\\ExperimentOutputs\\NoTerritoryNoMemory\\PatchCounts\\p2"
+NTNM_patch2f <- list.files(path, pattern = "\\.csv$", full.names = TRUE)
+NTNM_patch2 <- NTNM_patch2f %>%
+  imap_dfr(~ {
+    # read all as character to avoid type conflicts
+    df <- read_csv(.x, col_types = cols(.default = "c"))
+    
+    # extract the number that comes after "run"
+    run_id <- str_extract(basename(.x), "(?<=run)\\d+")
+    run_id <- as.numeric(run_id)
+    
+    df %>%
+      mutate(
+        tick = as.numeric(tick),
+        count = as.numeric(count),
+        behaviorSpaceRun = run_id,
+        predNum = 2
+      )
+  })
 
 NTNM_patch3 <- read.csv(file.choose(), header = TRUE)
 NTNM_patch3 <- split_behaviorspace_runs(NTNM_patch3, "^tick\tpatch-id")

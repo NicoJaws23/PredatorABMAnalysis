@@ -481,3 +481,48 @@ withinCompDist <- function(networks, predNum) {
   bind_rows(all_dists)
 }
 
+fileRead <- function(path, numPred, type = "coords") {
+  files <- list.files(path, pattern = "\\.csv$", full.names = TRUE)
+  
+  if (type == "coords") {
+    df <- imap_dfr(files, ~ {
+      df <- read_csv(.x, col_types = cols(.default = "c"))
+      run_id <- str_extract(basename(.x), "(?<=run)\\d+") |> as.numeric()
+      df %>%
+        mutate(
+          behaviorSpaceRun = run_id,
+          predNum = numPred
+        )
+    })
+    
+  } else if (type == "patchCount") {
+    df <- imap_dfr(files, ~ {
+      df <- read_csv(.x, col_types = cols(.default = "c"))
+      run_id <- str_extract(basename(.x), "(?<=run)\\d+") |> as.numeric()
+      df %>%
+        mutate(
+          tick = as.numeric(tick),
+          count = as.numeric(count),
+          behaviorSpaceRun = run_id,
+          predNum = numPred
+        )
+    })
+    
+  } else if (type == "terr") {
+    df <- imap_dfr(files, ~ {
+      df <- read_csv(.x, col_types = cols(.default = "c"))
+      run_id <- str_extract(basename(.x), "(?<=run)\\d+") |> as.numeric()
+      df %>%
+        mutate(
+          id = as.numeric(id),
+          behaviorSpaceRun = run_id,
+          predNum = numPred
+        )
+    })
+    
+  } else {
+    stop("Invalid type, must be 'coords', 'patchCount', or 'terr'")
+  }
+  
+  return(df)
+}
