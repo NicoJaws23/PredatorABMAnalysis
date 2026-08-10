@@ -1,0 +1,12 @@
+Input,Value,Units,Definition
+initial-number-prey,20,n,The total number of prey agents present in the model
+initial-number-predators,"1, 2, 3, 4",n,The total number of predator agents present in the model after 3000 ticks
+prey-detection-distance,5,patches,Distance at which prey agents are able to detect predator agents
+predator-detection-distance,5,patches,Distance at which predator agents can detect prey agents
+av-radius,10,patches,Maximum distance from memory point at which prey agents will move to avoid danger zones
+vision,10,patches,Distanct at which prey agents can see other prey agents
+minimum-separation,0.5,patches,The closests distance two prey agents can be from each other when in a group
+maximum-separation,5,patches,The furthest distance two prey agents can be from each other when in a group
+max-align-turn,3.25,degrees,The maximum degree which prey agents can adjust their heading to maintain the same heading as group mates
+max-cohere-turn,3,degrees,The maximum degree which prey agents can take to return to or join a group
+max-separate-turn,3.5,degrees,The maximum degree whuch prey agents can take to move away from another prey agent when they reach the minimum separation distance

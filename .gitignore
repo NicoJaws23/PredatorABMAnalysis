@@ -2,3 +2,12 @@
 .Rhistory
 .RData
 .Ruserdata
+.positai
+
+# R temporary/session data
+.RDataTmp*
+
+# Large generated data
+csvFiles/coords_dist/
+csvFiles/allCount.csv
+csvFiles/*_all.csv

@@ -4,6 +4,7 @@ library(ggplot2)
 library(lme4)
 library(sf)
 library(igraph)
+library(cowplot)
 
 #########################
 ###No Territory Memory###
@@ -1650,4 +1651,59 @@ PYTSM_patch4Maps <- heatMap(df = PYTSM_patch4, numPred = 4, titleText = "Prey Te
 PYTSM_patch4Maps$grid
 PYTSM_patch4Maps$smooth
 PYTSM_patch4Maps$preyDes
+################################################################################################################################################
+ggplot(data = allDist, mapping = aes(x = as.factor(numPred), y = mean_within_dist)) +
+  geom_boxplot()
+allDist
 
+allDist <- allDist |>
+  filter(!is.na(terr), !is.na(mem), !is.na(numPred))
+
+allGroups <- allGroups |>
+  filter(!is.na(terr), !is.na(mem), !is.na(numPred))
+
+allSizes <- allSizes |>
+  filter(!is.na(terr), !is.na(mem), !is.na(numPred))
+
+
+ggplot(allDist, aes(x = factor(numPred), y = mean_within_dist)) +
+  geom_boxplot() +
+  facet_grid(terr ~ mem,
+             labeller = labeller(
+               terr = c(None = "No Territory", Pred = "Predator Territory", Prey = "Prey Territory"),
+               mem  = c(Individual = "Individual Memory", None = "No Memory", Shared = "Shared Memory")
+             )) +
+  labs(
+    title = "Within Group Inter-Individual Distance",
+    x = "Number of Predators",
+    y = "Inter-Individual Distance (Patches)"
+  ) +
+  theme_bw()
+
+ggplot(allGroups, aes(x = factor(numPred), y = num_components)) +
+  geom_boxplot() +
+  facet_grid(terr ~ mem,
+             labeller = labeller(
+               terr = c(None = "No Territory", Pred = "Predator Territory", Prey = "Prey Territory"),
+               mem  = c(Individual = "Individual Memory", None = "No Memory", Shared = "Shared Memory")
+             )) +
+  labs(
+    title = "Effects on Number of Groups",
+    x = "Number of Predators",
+    y = "Number of Groups"
+  ) +
+  theme_bw()
+
+ggplot(allSizes, aes(x = factor(numPred), y = compSize)) +
+  geom_boxplot() +
+  facet_grid(terr ~ mem,
+             labeller = labeller(
+               terr = c(None = "No Territory", Pred = "Predator Territory", Prey = "Prey Territory"),
+               mem  = c(Individual = "Individual Memory", None = "No Memory", Shared = "Shared Memory")
+             )) +
+  labs(
+    title = "Effects on Group Size",
+    x = "Number of Predators",
+    y = "Group Size"
+  ) +
+  theme_bw()
