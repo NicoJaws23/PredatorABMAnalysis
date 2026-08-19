@@ -158,11 +158,23 @@ run_response_analysis <- function(data, response_var,
   
   # p = (# permuted F >= observed F + 1) / (# permutations + 1), so p can
   # never come out as exactly 0
+  obs_anova_df <- obs_anova %>%
+    as.data.frame() %>%
+    rownames_to_column("term") %>%
+    rename(Sum_Sq = `Sum Sq`, term_df = Df, observed_F = `F value`)
+  
   joint_result <- null_F %>%
     left_join(tibble(term = names(obs_F), observed_F = obs_F), by = "term") %>%
     group_by(term, observed_F) %>%
     summarise(p_value = (sum(F >= observed_F) + 1) / (n() + 1), .groups = "drop") %>%
+    left_join(obs_anova_df %>% select(term, Sum_Sq, term_df), by = "term") %>%
     arrange(p_value)
+  
+  # Round for display/reporting - the unrounded values are still used
+  # upstream (e.g. partial R2 calc, if you add that) since this happens
+  # after all the actual math is done
+  joint_result <- joint_result %>%
+    mutate(across(c(observed_F, Sum_Sq), ~ round(., 2)))
   
   print(joint_result)
   
@@ -186,9 +198,10 @@ run_response_analysis <- function(data, response_var,
 allDist_v2 <- allDist_v2 |>
   mutate(
     terr = relevel(as.factor(terr), ref = "None"),
-    mem  = relevel(as.factor(mem), ref = "None")
+    mem  = relevel(as.factor(mem), ref = "None"),
+    logDist = log(meanDist)
   )
-res_dist <- run_response_analysis(allDist_v2, response_var = "meanDist")
+res_dist <- run_response_analysis(allDist_v2, response_var = "logDist")
 
 emtrends(res_dist$best_model, ~ mem, var = "numPred")
 emmeans(res_dist$best_model, ~ mem | terr)
@@ -219,26 +232,29 @@ pairs(
 allSizes_v2 <- allSizes_v2 |>
   mutate(
     terr = relevel(as.factor(terr), ref = "None"),
-    mem  = relevel(as.factor(mem), ref = "None")
+    mem  = relevel(as.factor(mem), ref = "None"),
+    logSize = log(componentSize)
   )
-res_size <- run_response_analysis(allSizes_v2, response_var = "componentSize")
+res_size <- run_response_analysis(allSizes_v2, response_var = "logSize")
 emmeans(res_size$best_model, ~ mem | terr)
 
 ####Number of Components####
 allComps_v2 <- allComps_v2 |>
   mutate(
     terr = relevel(as.factor(terr), ref = "None"),
-    mem  = relevel(as.factor(mem), ref = "None")
+    mem  = relevel(as.factor(mem), ref = "None"),
+    logNum = log(numComponents)
   )
-res_comps <- run_response_analysis(allComps_v2, response_var = "numComponents")
+res_comps <- run_response_analysis(allComps_v2, response_var = "logNum")
 
 ####Moran's I####
 allMoranI <- allMoranI |>
   mutate(
     terr = relevel(as.factor(terr), ref = "None"),
-    mem  = relevel(as.factor(mem), ref = "None")
+    mem  = relevel(as.factor(mem), ref = "None"),
+    logMor = log(moranI)
   )
-res_moran <- run_response_analysis(allMoranI, response_var = "moranI")
+res_moran <- run_response_analysis(allMoranI, response_var = "logMor")
 
 emtrends(
   res_moran$best_model,
@@ -370,3 +386,80 @@ get_interaction_effects <- function(res, response_name, numPred_vals = c(1, 2, 3
 interaction_effects <- map2_dfr(all_results, names(all_results), get_interaction_effects)
 print(interaction_effects, n = Inf)
 write_csv(interaction_effects, "interaction_cell_means.csv")
+
+# =====================================================================
+# Table 8a: Distance - Memory x Territory x Number of Predators
+# (uses interaction_effects, already computed with numPred = c(1,2,3,4))
+# =====================================================================
+table_8a <- interaction_effects %>%
+  filter(response == "dist", !is.na(numPred)) %>%
+  mutate(emmean = round(emmean, 2)) %>%
+  select(mem, terr, numPred, emmean) %>%
+  pivot_wider(
+    names_from = numPred,
+    values_from = emmean,
+    names_prefix = "Pred_"
+  ) %>%
+  arrange(terr, mem)
+
+print(table_8a)
+write_csv(table_8a, "table_8a_distance_mem_terr_numPred.csv")
+
+
+# =====================================================================
+# Table 8b: Component Size - Memory x Territory (no numPred in model)
+# =====================================================================
+table_8b <- interaction_effects %>%
+  filter(response == "size") %>%
+  mutate(emmean = round(emmean, 2)) %>%
+  select(mem, terr, emmean) %>%
+  pivot_wider(names_from = terr, values_from = emmean) %>%
+  arrange(mem)
+
+print(table_8b)
+write_csv(table_8b, "table_8b_size_mem_terr.csv")
+
+
+# =====================================================================
+# Table 8c: Number of Components - Territory only (no interactions)
+# Pull straight from the isolated_effects table you already built,
+# since this response has no significant interaction term at all
+# =====================================================================
+table_8c <- isolated_effects %>%
+  filter(response == "comps", predictor == "terr") %>%
+  mutate(across(c(estimate, lower.CL, upper.CL), ~ round(., 2))) %>%
+  select(terr = level, estimate, lower.CL, upper.CL)
+
+print(table_8c)
+write_csv(table_8c, "table_8c_comps_terr.csv")
+
+
+# =====================================================================
+# Table 8d: Moran's I - Memory x Territory x Number of Predators
+# Same structure as 8a
+# =====================================================================
+table_8d <- interaction_effects %>%
+  filter(response == "moran", !is.na(numPred)) %>%
+  mutate(emmean = round(emmean, 4)) %>%   # more decimals - moranI is bounded 0-1
+  select(mem, terr, numPred, emmean) %>%
+  pivot_wider(
+    names_from = numPred,
+    values_from = emmean,
+    names_prefix = "Pred_"
+  ) %>%
+  arrange(terr, mem)
+
+print(table_8d)
+write_csv(table_8d, "table_8d_moran_mem_terr_numPred.csv")
+
+
+# =====================================================================
+# Optional: condensed version of 8a/8d for main text, showing only the
+# extremes (1 and 4 predators) instead of the full 4-column grid,
+# with full version reserved for supplementary material
+# =====================================================================
+table_8a_condensed <- table_8a %>%
+  select(mem, terr, Pred_1, Pred_4)
+
+table_8d_condensed <- table_8d %>%
+  select(mem, terr, Pred_1, Pred_4)
